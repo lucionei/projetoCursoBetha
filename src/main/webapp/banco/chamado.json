@@ -1,0 +1,26 @@
+[
+	{
+		"id": 1,
+		"cliente": {"id": 1, "nome" : "Brenden Golden", "telefone": "(38) 3294-2916","documento": "123031467-32","email":"teste@gmail.com"},
+		"equipamento": {"id" : 1, "descricao" : "Impressora"},
+		"problema": "Impressora não liga",
+		"emissao": "01/01/2016",
+		"aprovacao": "",
+		"tipo": "1",
+		"status": "01",
+		"tecnico": {"id": 1, "nome": "Barclay Vasquez", "tipo": "Tecnico"},
+		"gerente": {"id": 2, "nome": "Brody Gross", "tipo": "Gerente"}
+	},
+	{
+		"id": 2,
+		"cliente": {"id": 1, "nome" : "Brenden Golden", "telefone": "(38) 3294-2916","documento": "123031467-32","email":"teste@gmail.com"},
+		"equipamento": {"id" : 1, "descricao" : "Impressora"},
+		"problema": "Estabilizador não liga",
+		"emissao": "01/01/2016",
+		"aprovacao": "",
+		"tipo": "1",
+		"status": "01",
+		"tecnico": {"id": 1, "nome": "Barclay Vasquez", "tipo": "Tecnico"},
+		"gerente": {"id": 2, "nome": "Brody Gross", "tipo": "Gerente"}
+	}	
+]

@@ -1,0 +1,14 @@
+[
+	{
+		"id": 1,
+		"descricao": "Impressora"
+	},
+	{
+		"id": 2,
+		"descricao": "CPU"
+	},
+	{
+		"id": 3,
+		"descricao": "Estabilizador"
+	}
+]

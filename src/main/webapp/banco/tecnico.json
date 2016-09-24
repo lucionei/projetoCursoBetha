@@ -1,0 +1,12 @@
+[
+	{
+		"id": 1,
+		"nome": "Barclay Vasquez",
+		"tipo": "Tecnico"
+	},
+	{
+		"id": 2,
+		"nome": "Brody Gross",
+		"tipo": "Gerente"
+	}	
+]
