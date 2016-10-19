@@ -52,7 +52,7 @@ CREATE TABLE public.chamados_tecnicos
    status character varying(2) not null,
    tipo character varying(1) not null,
    valor_total NUMERIC(14,5) not null default 0,
-   CONSTRAINT pk_chamados_tecnicos PRIMARY KEY (id_chamados_tecnicos), 
+   CONSTRAINT pk_chamados_tecnicos PRIMARY KEY (id_chamado_tecnico), 
    CONSTRAINT fk_cliente FOREIGN KEY (id_cliente) REFERENCES public.clientes (id_cliente) ON UPDATE NO ACTION ON DELETE NO ACTION,
    CONSTRAINT fk_tecnico FOREIGN KEY (id_tecnico) REFERENCES public.tecnicos (id_tecnico) ON UPDATE NO ACTION ON DELETE NO ACTION,
    CONSTRAINT fk_gerente FOREIGN KEY (id_gerente) REFERENCES public.tecnicos (id_tecnico) ON UPDATE NO ACTION ON DELETE NO ACTION,
@@ -73,28 +73,14 @@ CREATE SEQUENCE public.seq_equipamentos;
 
 CREATE SEQUENCE public.seq_chamados_tecnicos;
 
-CREATE OR REPLACE FUNCTION trata_erros(codigo_erro integer) RETURNS void AS $$
-    BEGIN
-        IF codigo_erro = 1 THEN
-            RAISE EXCEPTION 'Chamado já finalizado';
-        END IF;
-        IF codigo_erro = 2 THEN
-            RAISE EXCEPTION 'Chamado já cancelado'; 
-        END IF;
-        IF codigo_erro = 3 THEN
-            RAISE EXCEPTION 'Chamado já aprovado'; 
-        END IF;
-    END;
-$$ LANGUAGE SQL;
-
 CREATE OR REPLACE FUNCTION aprova_chamado() RETURNS trigger AS $$
     BEGIN
         IF TG_OP = 'UPDATE' THEN
 	   IF OLD.status = '04' THEN
-              PERFORM trata_erros(1);
+              RAISE EXCEPTION 'Chamado já finalizado';
            END IF;
            IF OLD.aprovacao IS NOT NULL AND NEW.status <> '04' THEN
-              PERFORM trata_erros(3);
+              RAISE EXCEPTION 'Chamado já aprovado';
            END IF;
         END IF;
         IF NEW.aprovacao IS NOT NULL AND NEW.status <> '04' THEN
@@ -112,13 +98,13 @@ CREATE TRIGGER aprova_chamado BEFORE INSERT OR UPDATE ON chamados_tecnicos
 CREATE OR REPLACE FUNCTION deleta_chamado() RETURNS trigger AS $$
     BEGIN
         IF OLD.status = '03' THEN
-            PERFORM trata_erros(2);
+            RAISE EXCEPTION 'Chamado já cancelado';
         END IF;
         IF OLD.status = '04' THEN
-            PERFORM trata_erros(1);
+            RAISE EXCEPTION 'Chamado já finalizado';
         END IF;
         IF OLD.aprovacao IS NOT NULL THEN
-            PERFORM trata_erros(3);
+            RAISE EXCEPTION 'Chamado já aprovado';
         END IF;
         RETURN OLD;
     END;
