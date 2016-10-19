@@ -1,106 +1,184 @@
 (function () {	
 	
-    function Chamado(id, cliente, equipamento, problema, emissao, aprovacao, tecnico, gerente, tipo, status) {
+    function Chamado(id, cliente, equipamento, descricaoProblema, emissao, aprovacao, tecnico, gerente, tipo, status) {
         this.id = id;
-        this.cliente = cliente;
-        this.equipamento = equipamento,
-        this.problema = problema;
+        this.descricaoProblema = descricaoProblema;
         this.emissao = emissao;
         this.aprovacao = aprovacao;
-        this.tecnico = tecnico;
-        this.gerente = tecnico;
         this.tipo = tipo;
         this.status = status;
+        this.cliente = cliente;
+        this.tecnico = tecnico;
+        this.gerente = gerente;
+        this.equipamento = equipamento;
+        this.valorTotal = 0.0;
     }
 
     function chamadoControler() {
-		var tamanhoPagina = 10;
-		var pagina = 0;			
-        var repositorio;
-        var itemAtual;
-        var proximoId;
+		var limitePagina = 10;
+	    var pagina = 0;			
         var modeloLinhaTabela;
-		var idRemover;
-        var inserindo = false;
+        var modeloLinhaDropDowncliente;
+        var modeloLinhaDropDownEquipamento;
+        var modeloLinhaDropDownTecnico;
+        var modeloLinhaDropDownGerente;
+	    var idRemover;
 
-        function _carregar() {
-            $.getJSON('banco/chamado.json', function(data) {
-                repositorio = data;
-                proximoId = repositorio.length + 1;
-                _renderTable();
-            });
+        function _carregar(pesquisar) {
+            if (pesquisar) {
+                if ($('#formPesquisar input[name=dadoPesquisa]').val()) {
+                    var dadoPesquisa = $('#formPesquisar input[name=dadoPesquisa]').val();
+                    $.getJSON('api/chamados?pagina='+(pagina+1)+'&limitePagina='+limitePagina+'&pesquisa='+dadoPesquisa, function(data) {
+                        if (data.length >= 0 || pagina > 0) {
+                            _renderTable(data);
+                        }
+                        else{
+                            showMessage('warning', 'Nada encontrado!');
+                        }
+                        $('#proximo').prop('disabled', data.length == 0 || data.length < limitePagina);
+                    });
+                }
+            }
+            else { 
+                $.getJSON('api/chamados?pagina='+(pagina+1)+'&limitePagina='+limitePagina, function(data) {
+                    if (data.length >= 0 || pagina > 0) {
+                        _renderTable(data);   
+                    }
+                    $('#proximo').prop('disabled', data.length == 0 || data.length < limitePagina);
+                });
+            }
         }
 
         _carregar();
 
-        function _inserir() {
+        function _pesquisar() {
+            _carregar(true);
+        }
+
+        function _carregaDropDown(){
+            $.getJSON('api/clientes', function(data) {
+                if (data.length >= 0) {
+                    var final = '';
+                    modeloLinhaDropDowncliente = modeloLinhaDropDowncliente || $('select[name=cliente]').html();
+                    for (var i = 0; i < data.length; i++) {
+                        var res = modeloLinhaDropDowncliente;
+                        var linha = data[i];
+                        res = res.replace(/\(\(id\)\)/g, linha.id);
+                        res = res.replace(/\(\(cliente\)\)/g,linha.nome);
+                        final += res;
+                    }
+                    final = '<option value="0">Selecione o cliente</option>' + final;
+                    $('select[name=cliente]').html(final);
+                }
+            });
+            $.getJSON('api/equipamentos', function(data) {
+                if (data.length >= 0) {
+                    var final = '';
+                    modeloLinhaDropDownEquipamento = modeloLinhaDropDownEquipamento || $('select[name=equipamento]').html();
+                    for (var i = 0; i < data.length; i++) {
+                        var res = modeloLinhaDropDownEquipamento;
+                        var linha = data[i];
+                        res = res.replace(/\(\(id\)\)/g, linha.id);
+                        res = res.replace(/\(\(equipamento\)\)/g,linha.descricao);
+                        final += res;
+                    }
+                    final = '<option value="0">Selecione o equipamento</option>' + final;
+                    $('select[name=equipamento]').html(final);
+                }
+            });
+            $.getJSON('api/tecnicos?tipo=T', function(data) {
+                if (data.length >= 0) {
+                    var final = '';
+                    modeloLinhaDropDownTecnico = modeloLinhaDropDownTecnico || $('select[name=tecnico]').html();
+                    for (var i = 0; i < data.length; i++) {
+                        var res = modeloLinhaDropDownTecnico;
+                        var linha = data[i];
+                        res = res.replace(/\(\(id\)\)/g, linha.id);
+                        res = res.replace(/\(\(tecnico\)\)/g,linha.nome);
+                        final += res;
+                    }
+                    final = '<option value="0">Selecione o técnico</option>' + final;
+                    $('select[name=tecnico]').html(final);
+                }
+            });
+            $.getJSON('api/tecnicos?tipo=G', function(data) {
+                if (data.length >= 0) {
+                    var final = '';
+                    modeloLinhaDropDownGerente = modeloLinhaDropDownGerente || $('select[name=gerente]').html();
+                    for (var i = 0; i < data.length; i++) {
+                        var res = modeloLinhaDropDownGerente;
+                        var linha = data[i];
+                        res = res.replace(/\(\(id\)\)/g, linha.id);
+                        res = res.replace(/\(\(gerente\)\)/g,linha.nome);
+                        final += res;
+                    }
+                    final = '<option value="0">Selecione o gerente</option>' + final;
+                    $('select[name=gerente]').html(final);
+                }
+            });
+        }          
+
+        function _inserir() { 
+            _carregaDropDown();
+            var titulo = 'Cadastro de Chamados <samp id="idModalLabelCadastro">((id))</samp>';
             $('.form-group').removeClass('has-error');
-            itemAtual = new Chamado(proximoId++);
-            repositorio.push(itemAtual);
-            _preencheForm();
-            inserindo = true;
+            $('#modalLabelCadastro').html(titulo);
+            $('#idModalLabelCadastro').addClass('hide');
+            _preencheForm(new Chamado());
+            $('select[name=tipo]').val('I');
+            $('select[name=status]').val('01');
+            $('input[name=emissao]').val(formatDate(new Date()));
+            $('input[name=aprovacao]').val('');
         }
 
-        function _cancelar() {
-            if (inserindo) {
-                var linha = repositorio[repositorio.length - 1];
-                _setRemove(linha.id);
-                _remove();
-                proximoId--;
-            }
-            inserindo = false;
-        }
-
-        function _preencheForm() {
-            $('input[name=id]').val(itemAtual.id);
-            $('select[name=cliente]').val(itemAtual.cliente.id);
-            $('select[name=equipamento]').val(itemAtual.equipamento.id);
-            $('textarea[name=problema]').val(itemAtual.problema);
-            $('input[name=emissao]').val(formatDate(itemAtual.emissao));
-            $('input[name=aprovacao]').val(formatDate(itemAtual.aprovacao));
-            $('select[name=tecnico]').val(itemAtual.tecnico.id);
-            $('select[name=gerente]').val(itemAtual.gerente.id);
-            $('select[name=tipo]').val(itemAtual.tipo);
-            $('select[name=status]').val(itemAtual.status);
-        }
-
-        function _parseForm() {
-            itemAtual.id = $('input[name=id]').val();
-            itemAtual.cliente.id = $('select[name=cliente]').val();
-            itemAtual.equipamento.id = $('select[name=equipamento]').val();
-            itemAtual.problema = $('textarea[name=problema]').val();
-            itemAtual.emissao = formatDate($('input[name=emissao]').val());
-            itemAtual.aprovacao = formatDate($('input[name=aprovacao]').val());
-            itemAtual.tecnico.id = $('select[name=tecnico]').val();
-            itemAtual.gerente.id = $('select[name=gerente]').val();
-            itemAtual.tipo = $('select[name=tipo]').val();
-            itemAtual.status = $('select[name=status]').val();
+        function _preencheForm(registro) {
+            if (registro.id != null) {
+                var id = $('#idModalLabelCadastro').html();
+                id = id.replace(/\(id\)/g, registro.id);
+                $('#idModalLabelCadastro').html(id);            
+                $('select[name=tipo]').val(registro.tipo);
+                $('select[name=status]').val(registro.status);
+                $('input[name=emissao]').val(formatDate(registro.emissao));
+                $('input[name=aprovacao]').val(formatDate(registro.aprovacao));
+            }    
+            $('input[name=id]').val(registro.id);
+            $('textarea[name=descricaoProblema]').val(registro.descricaoProblema);
+            $('select[name=cliente]').val(registro.cliente);
+            $('select[name=tecnico]').val(registro.tecnico);
+            $('select[name=gerente]').val(registro.gerente);
+            $('select[name=equipamento]').val(registro.equipamento);
         }
 
         function _salvar() {
             if (_validarCampos()) {
-                _parseForm();
-                _renderTable();
+                var dados = $('form#formChamado').serializeObject();
+                dados.emissao = $('input[name=emissao]').val();
+                dados.aprovacao = $('input[name=aprovacao]').val();
+                dados.status = $('select[name=status]').val();
+                $.post('api/chamados', dados, function () {
+                    _carregar();
+                    showMessage('success', 'Chamado salvo com sucesso!');
+                }).error(function (data) {
+                    showMessage('danger', data.status + ' - ' + data.responseText);
+                });
                 $("#cadastroChamado-modal").modal("hide");
-                showMessage('success', 'Chamado salvo com sucesso!')
             }
         }
 
-        function _renderTable() {
+        function _renderTable(repositorio) {
             var final = '';
             modeloLinhaTabela = modeloLinhaTabela || $('table.table tbody').html();
             if (repositorio.length == 0) {
                 $('table.table tbody').html('<tr><td>Nenhum Chamado cadastrado.</td></tr>');
             }
             else {
-                for (var i = pagina * tamanhoPagina; i < repositorio.length && i < (pagina + 1) *  tamanhoPagina; i++) {
+                for (var i = 0; i < repositorio.length; i++) {
                     var res = modeloLinhaTabela;
                     var linha = repositorio[i];
                     res = res.replace(/\(\(id\)\)/g, linha.id);
-                    res = res.replace(/\(\(cliente.nome\)\)/g, linha.cliente.nome);
-                    res = res.replace(/\(\(problema\)\)/g, linha.problema);
-                    res = res.replace(/\(\(emissao\)\)/g, linha.emissao);
-                    res = res.replace(/\(\(aprovacao\)\)/g, linha.aprovacao);
+                    res = res.replace(/\(\(problema\)\)/g, linha.descricaoProblema);
+                    res = res.replace(/\(\(emissao\)\)/g, formatDate(linha.emissao).substr(0, 10));
+                    res = res.replace(/\(\(aprovacao\)\)/g, formatDate(linha.aprovacao).substr(0, 10));
                     if (linha.status == '01') {
                         res = res.replace(/\(\(status\)\)/g, 'Aberto');
                     }
@@ -117,16 +195,7 @@
                 }
                 $('table.table tbody').html(final);
             }
-            if (repositorio.length > 0) {
-			    $('#numeracao').text((pagina + 1) + ' de ' + Math.ceil(repositorio.length / tamanhoPagina));
-            }
-            else {
-                $('#numeracao').text('0 de 0');
-            }  
-			$('#primeiro').prop('disabled', repositorio.length <= tamanhoPagina || pagina == 0);
-			$('#anterior').prop('disabled', repositorio.length <= tamanhoPagina || pagina == 0);
-			$('#proximo').prop('disabled', repositorio.length <= tamanhoPagina || pagina >= Math.ceil(repositorio.length / tamanhoPagina) - 1);
-			$('#ultimo').prop('disabled', repositorio.length <= tamanhoPagina || pagina == Math.ceil(repositorio.length / tamanhoPagina) - 1);
+            $('#anterior').prop('disabled', pagina == 0);
         }
 		
 		function _setRemove(id) {
@@ -134,89 +203,138 @@
 		}
 
         function _remove() {
-			var ultimaPagina;
-            for (var i = 0; i < repositorio.length; i++) {
-                var item = repositorio[i];
-                if (item.id == idRemover) {
-					if (pagina == Math.ceil(repositorio.length / tamanhoPagina) - 1) {
-						ultimaPagina = 1;
-					}					
-                    repositorio.splice(i, 1);
-                    if (repositorio.length == 0) {
-                        pagina = 0;
-                    }
-					if (ultimaPagina == 1 && repositorio.length > 0 && pagina != Math.ceil(repositorio.length / tamanhoPagina) - 1) {
-						pagina = Math.ceil(repositorio.length / tamanhoPagina) - 1;
-					}
-                    break;
-                }
-            }
-            _renderTable();
-			idRemover = 0;
+			$.ajax({
+                url: "api/chamados?id=" + idRemover,
+                type: "DELETE"
+            }).done(function () {
+                _carregar();
+            }).error(function (data) {
+                showMessage('danger', data.status + ' - ' + data.responseText);
+            });
+            idRemover = 0;
         }
 
         function _editar(id) {
-            for (var i = 0; i < repositorio.length; i++) {
-                var item = repositorio[i];
-                if (item.id == id) {
-                    itemAtual = item;
-                    break;
-                }
-            }
-            _preencheForm();
-            inserindo = false;
+            $('#idModalLabelCadastro').removeClass();
+            var titulo = 'Editar Chamado <samp id="idModalLabelCadastro">((id))</samp>';
+            $('#modalLabelCadastro').html(titulo);
+            $.getJSON('api/chamados', 'id=' + id, function (data) {
+                _preencheForm(data);
+            })
         }
-		
-		function _primeiro() {
-			if (pagina > 0) {
-				pagina = 0;
-				_renderTable();
-			}	
-		}
+
+        function _aprovar(id) {
+            $('#idModalLabelCadastro').removeClass();
+            var titulo = 'Aprovar Chamado <samp id="idModalLabelCadastro">((id))</samp>';
+            $('#modalLabelCadastro').html(titulo);
+
+            $.getJSON('api/chamados', 'id=' + id, function (data) {
+                data.aprovacao = new Date();
+                _preencheForm(data);
+            });
+        }
+
+        function _cancelar(id) {
+            $.getJSON('api/chamados', 'id=' + id, function (data) {
+                data.status = '03';
+                data.emissao = formatDate(data.emissao);
+                data.aprovacao = formatDate(data.aprovacao);
+                $.post('api/chamados', data, function () {
+                    _carregar();
+                    showMessage('success', 'Chamado cancelado com sucesso!');
+                }).error(function (data) {
+                    showMessage('danger', data.status + ' - ' + data.responseText);
+                });
+            });
+        }        
+
+        function _finalizar(id) {
+            $.getJSON('api/chamados', 'id=' + id, function (data) {
+                if (data.status == '02') {
+                    data.status = '04';
+                    data.emissao = formatDate(data.emissao);
+                    data.aprovacao = formatDate(data.aprovacao);
+                    $.post('api/chamados', data, function () {
+                        _carregar();
+                        showMessage('success', 'Chamado finalizado com sucesso!');
+                    }).error(function (data) {
+                        showMessage('danger', data.status + ' - ' + data.responseText);
+                    });
+                }
+                else if (data.status == '04') {
+                    showMessage('danger', 'Chamado já finalizado');
+                }
+                else {
+                    showMessage('danger', 'Chamado deve estar aprovado para ser finalizado');    
+                }
+            });
+        }        
 		
 		function _anterior() {
 			if (pagina > 0) {
 				pagina--;
-				_renderTable();
+				_carregar();
 			}
 		}
 		
 		function _proximo() {
-			if (pagina < repositorio.length / tamanhoPagina - 1) {
-				pagina++;
-				_renderTable();
-			}
-		}
-		
-		function _ultimo() {
-			if (pagina < repositorio.length / tamanhoPagina - 1) {
-				pagina = Math.ceil(repositorio.length / tamanhoPagina) - 1;
-				_renderTable();
-			}			
+			pagina++;
+            _carregar();
 		}
 
         function _validarCampos() {
             var retorno = true;
-            $('#formChamado textarea[name=problema]').closest('.form-group').removeClass('has-error');
-            if (!$('#formChamado textarea[name=problema]').val()) {
-                $('#formChamado textarea[name=problema]').closest('.form-group').addClass('has-error');
+            $('#formChamado textarea#descricaoProblema').closest('.form-group').removeClass('has-error');
+            if (!$('#formChamado textarea#descricaoProblema').val()) {
+                $('#formChamado textarea#descricaoProblema').closest('.form-group').addClass('has-error');
+                retorno =  false;
+            }
+            $('#formChamado select[name=cliente]').closest('.form-group').removeClass('has-error');
+            if (!$('#formChamado select[name=cliente]').val() || $('#formChamado select[name=cliente]').val() == '0') {
+                $('#formChamado select[name=cliente]').closest('.form-group').addClass('has-error');
+                retorno =  false;
+            }
+            $('#formChamado select[name=equipamento]').closest('.form-group').removeClass('has-error');
+            if (!$('#formChamado select[name=equipamento]').val() || $('#formChamado select[name=cliente]').val() == '0') {
+                $('#formChamado select[name=equipamento]').closest('.form-group').addClass('has-error');
+                retorno =  false;
+            }
+            $('#formChamado select[name=tecnico]').closest('.form-group').removeClass('has-error');
+            if (!$('#formChamado select[name=tecnico]').val() || $('#formChamado select[name=cliente]').val() == '0') {
+                $('#formChamado select[name=tecnico]').closest('.form-group').addClass('has-error');
+                retorno =  false;
+            }
+            $('#formChamado select[name=gerente]').closest('.form-group').removeClass('has-error');
+            if (!$('#formChamado select[name=gerente]').val() || $('#formChamado select[name=cliente]').val() == '0') {
+                $('#formChamado select[name=gerente]').closest('.form-group').addClass('has-error');
+                retorno =  false;
+            }
+            $('#formChamado select[name=tipo]').closest('.form-group').removeClass('has-error');
+            if (!$('#formChamado select[name=tipo]').val()) {
+                $('#formChamado select[name=tipo]').closest('.form-group').addClass('has-error');
+                retorno =  false;
+            }
+            $('#formChamado select[name=status]').closest('.form-group').removeClass('has-error');
+            if (!$('#formChamado select[name=status]').val()) {
+                $('#formChamado select[name=status]').closest('.form-group').addClass('has-error');
                 retorno =  false;
             }
             return retorno;
-        }        
+        }
 
         return {
             inserir: _inserir,
-            cancelar: _cancelar,
             editar: _editar,
+            aprovar: _aprovar,
             salvar: _salvar,
-			setRemove: _setRemove,
+            setRemove: _setRemove,
             remove: _remove,
-			primeiro: _primeiro,
-			anterior: _anterior,
-			proximo: _proximo,
-			ultimo: _ultimo
-			
+            anterior: _anterior,
+            proximo: _proximo,
+            pesquisar: _pesquisar,
+            cancelar: _cancelar,
+            finalizar: _finalizar,
+            carregaDDW: _carregaDropDown()			
         }
     }
 
@@ -228,16 +346,9 @@
         $('#btnNovo').click(function(){
             ctrl.inserir();
         });
-        $('#btnCancelar').click(function(){
-            ctrl.cancelar();
+        $('#btnPesquisar').click(function(){
+            ctrl.pesquisar();
         });
-        $("#btnFecharFormChamado").click(function(){
-            ctrl.cancelar();
-        });        
-        $('#cadastroChamado-modal').keydown(function(e) {
-            if (e.keyCode == 27) {
-                ctrl.cancelar();
-            }
-        });                
+        ctrl.carregaDDW;
     });
 })();

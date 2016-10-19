@@ -1,37 +1,68 @@
 (function () {	
 	
-    function Cliente(id, nome, documento, telefone, email) {
+    function Cliente(id, nome, telefone, documento, email) {
         this.id = id;
         this.nome = nome;
-        this.documento = documento;
         this.telefone = telefone;
+        this.documento = documento;
         this.email = email;
     }
 
     function clienteControler() {
-        var tamanhoPagina = 10;
-	var pagina = 0;			
+        var limitePagina = 10;
+	    var pagina = 0;			
         var modeloLinhaTabela;
-	var idRemover;
+	    var idRemover;
 
-        function _carregar() {
-            $.getJSON('api/clientes', function(data) {
-                _renderTable(data);
-            });
+        function _carregar(pesquisar) {
+            if (pesquisar) {
+                if ($('#formPesquisar input[name=dadoPesquisa]').val()) {
+                    var dadoPesquisa = $('#formPesquisar input[name=dadoPesquisa]').val();
+                    $.getJSON('api/clientes?pagina='+(pagina+1)+'&limitePagina='+limitePagina+'&pesquisa='+dadoPesquisa, function(data) {
+                        if (data.length >= 0 || pagina > 0) {
+                            _renderTable(data);
+                        }
+                        else{
+                            showMessage('warning', 'Nada encontrado!');
+                        }
+                        $('#proximo').prop('disabled', data.length == 0 || data.length < limitePagina);
+                    });
+                }
+            }
+            else { 
+                $.getJSON('api/clientes?pagina='+(pagina+1)+'&limitePagina='+limitePagina, function(data) {
+                    if (data.length >= 0 || pagina > 0) {
+                        _renderTable(data);   
+                    }
+                    $('#proximo').prop('disabled', data.length == 0 || data.length < limitePagina);
+                });
+            }
         }
 
         _carregar();
 
+        function _pesquisar() {
+            _carregar(true);
+        }
+
         function _inserir() {
+            var titulo = 'Cadastro de Clientes <samp id="idModalLabelCadastro">((id))</samp>';
             $('.form-group').removeClass('has-error');
+            $('#modalLabelCadastro').html(titulo);
+            $('#idModalLabelCadastro').addClass('hide');            
             _preencheForm(new Cliente());
         }
 
         function _preencheForm(registro) {
+            if (registro.id != null) {
+                var id = $('#idModalLabelCadastro').html();
+                id = id.replace(/\(id\)/g, registro.id);
+                $('#idModalLabelCadastro').html(id);            
+            }    
             $('input[name=id]').val(registro.id);
             $('input[name=nome]').val(registro.nome);
-            $('input[name=documento]').val(registro.documento);
             $('input[name=telefone]').val(registro.telefone);
+            $('input[name=documento]').val(registro.documento);
             $('input[name=email]').val(registro.email);
         }
 
@@ -39,9 +70,11 @@
             if (_validarCampos()) {
                 $.post('api/clientes', $('form[role=cadastro]').serialize(), function () {
                     _carregar();
+                    showMessage('success', 'Cliente salvo com sucesso!');
+                }).error(function (data) {
+                    showMessage('danger', data.status + ' - Erro ao salvar cliente! &nbsp' + data.responseText);
                 });
                 $("#cadastroCliente-modal").modal("hide");
-                showMessage('success', 'Cliente salvo com sucesso!')
             }
         }
 
@@ -52,58 +85,44 @@
                 $('table.table tbody').html('<tr><td>Nenhum cliente cadastrado.</td></tr>');
             }
             else {
-                for (var i = pagina * tamanhoPagina; i < repositorio.length && i < (pagina + 1) *  tamanhoPagina; i++) {
+                for (var i = 0; i < repositorio.length; i++) {
                     var res = modeloLinhaTabela;
                     var linha = repositorio[i];
                     res = res.replace(/\(\(id\)\)/g, linha.id);
                     res = res.replace(/\(\(nome\)\)/g, linha.nome);
-                    res = res.replace(/\(\(telefone\)\)/g, linha.telefone);
-                    res = res.replace(/\(\(email\)\)/g, linha.email);
+                    res = res.replace(/\(\(telefone\)\)/g, setMascaraTelefone(linha.telefone));
                     final += res;
                 }
                 $('table.table tbody').html(final);
             }
-            if (repositorio.length > 0) {
-			    $('#numeracao').text((pagina + 1) + ' de ' + Math.ceil(repositorio.length / tamanhoPagina));
-            }
-            else {
-                $('#numeracao').text('0 de 0');
-            }  
-			$('#primeiro').prop('disabled', repositorio.length <= tamanhoPagina || pagina == 0);
-			$('#anterior').prop('disabled', repositorio.length <= tamanhoPagina || pagina == 0);
-			$('#proximo').prop('disabled', repositorio.length <= tamanhoPagina || pagina >= Math.ceil(repositorio.length / tamanhoPagina) - 1);
-			$('#ultimo').prop('disabled', repositorio.length <= tamanhoPagina || pagina == Math.ceil(repositorio.length / tamanhoPagina) - 1);
+            $('#anterior').prop('disabled', pagina == 0);
         }
 		
-		function _setRemove(id) {
-			idRemover = id;
-		}
+	    function _setRemove(id) {
+            idRemover = id;
+	    }
 
         function _remove() {
             $.ajax({
-                method: "DELETE",
-                url: "api/clientes",
-                data: { id: idRemover }
+                url: "api/clientes?id=" + idRemover,
+                type: "DELETE"
             }).done(function () {
                 _carregar();
+            }).error(function (data) {
+                showMessage('danger', data.status + ' - Erro ao excluir cliente!');
             });
-            _carregar();
-			idRemover = 0;
+            idRemover = 0;
         }
 
         function _editar(id) {
+            $('#idModalLabelCadastro').removeClass();
+            var titulo = 'Editar Cliente <samp id="idModalLabelCadastro">((id))</samp>';
+            $('#modalLabelCadastro').html(titulo);
             $.getJSON('api/clientes', 'id=' + id, function (data) {
                 _preencheForm(data);
             })
 
         }
-		
-		function _primeiro() {
-			if (pagina > 0) {
-				pagina = 0;
-				_carregar();
-			}	
-		}
 		
 		function _anterior() {
 			if (pagina > 0) {
@@ -113,19 +132,10 @@
 		}
 		
 		function _proximo() {
-			if (pagina < repositorio.length / tamanhoPagina - 1) {
-				pagina++;
-				_carregar();
-			}
+            pagina++;
+            _carregar();
 		}
 		
-		function _ultimo() {
-			if (pagina < repositorio.length / tamanhoPagina - 1) {
-				pagina = Math.ceil(repositorio.length / tamanhoPagina) - 1;
-				_carregar();
-			}			
-		}
-
         function _validarCampos() {
             var retorno = true;
             $('#formCliente input[name=nome]').closest('.form-group').removeClass('has-error');
@@ -143,11 +153,6 @@
                 $('#formCliente input[name=documento]').closest('.form-group').addClass('has-error');
                 retorno = false;
             }
-            $('#formCliente input[name=email]').closest('.form-group').removeClass('has-error');
-            if (!$('#formCliente input[name=email]').val()) {
-                $('#formCliente input[name=email]').closest('.form-group').addClass('has-error');
-                retorno = false;
-            }
             return retorno;
         }        
 
@@ -155,13 +160,11 @@
             inserir: _inserir,
             editar: _editar,
             salvar: _salvar,
-			setRemove: _setRemove,
+            setRemove: _setRemove,
             remove: _remove,
-			primeiro: _primeiro,
-			anterior: _anterior,
-			proximo: _proximo,
-			ultimo: _ultimo
-			
+            anterior: _anterior,
+            proximo: _proximo,
+            pesquisar: _pesquisar
         }
     }
 
@@ -173,11 +176,10 @@
         $('#btnNovo').click(function(){
             ctrl.inserir();
         });
-        $('#btnCancelar').click(function(){
-            ctrl.cancelar();
+        $('#btnPesquisar').click(function(){
+            ctrl.pesquisar();
         });
-        $("#btnFecharFormCliente").click(function(){
-            ctrl.cancelar();
-        });        
+        $('#formCliente input[name=telefone]').inputmask({mask: ['(99) 9999-9999', '(99) 99999-9999'], keepStatic: true });
+        $("#formCliente input[name=documento]").inputmask({mask: ['999.999.999-99', '99.999.999/9999-99'], keepStatic: true });
     });
 })();

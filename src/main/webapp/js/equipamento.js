@@ -1,75 +1,85 @@
 (function () {	
 	
-    function Equipamento(id, nome, tipo) {
+    function Equipamento(id, descricao, tipo) {
         this.id = id;
-        this.descricao = nome;
+        this.descricao = descricao;
     }
 
     function equipamentoControler() {
-		var tamanhoPagina = 10;
-		var pagina = 0;			
-        var repositorio;
-        var itemAtual;
-        var proximoId;
+        var limitePagina = 10;
+	    var pagina = 0;			
         var modeloLinhaTabela;
-		var idRemover;
-        var inserindo = false;
+	    var idRemover;
 
-        function _carregar() {
-            $.getJSON('banco/equipamento.json', function(data) {
-                repositorio = data;
-                proximoId = repositorio.length + 1;
-                _renderTable();
-            });
+        function _carregar(pesquisar) {
+            if (pesquisar) {
+                if ($('#formPesquisar input[name=dadoPesquisa]').val()) {
+                    var dadoPesquisa = $('#formPesquisar input[name=dadoPesquisa]').val();
+                    $.getJSON('api/equipamentos?pagina='+(pagina+1)+'&limitePagina='+limitePagina+'&pesquisa='+dadoPesquisa, function(data) {
+                        if (data.length >= 0 || pagina > 0) {
+                            _renderTable(data);
+                        }
+                        else{
+                            showMessage('warning', 'Nada encontrado!');
+                        }
+                        $('#proximo').prop('disabled', data.length == 0 || data.length < limitePagina);
+                    });
+                }
+            }
+            else { 
+                $.getJSON('api/equipamentos?pagina='+(pagina+1)+'&limitePagina='+limitePagina, function(data) {
+                    if (data.length >= 0 || pagina > 0) {
+                        _renderTable(data);   
+                    }
+                    $('#proximo').prop('disabled', data.length == 0 || data.length < limitePagina);
+                });
+            }
         }
 
         _carregar();
 
+        function _pesquisar() {
+            _carregar(true);
+        }
+
         function _inserir() {
+            var titulo = 'Cadastro de Equipamentos <samp id="idModalLabelCadastro">((id))</samp>';
             $('.form-group').removeClass('has-error');
-            itemAtual = new Equipamento(proximoId++);
-            repositorio.push(itemAtual);
-            _preencheForm(); 
-            inserindo = true;           
+            $('#modalLabelCadastro').html(titulo);
+            $('#idModalLabelCadastro').addClass('hide');
+            _preencheForm(new Equipamento());
         }
 
-        function _cancelar() {
-            if (inserindo) {
-                var linha = repositorio[repositorio.length - 1];
-                _setRemove(linha.id);
-                _remove();
-                proximoId--;
-            }
-            inserindo = false;
-        }
-
-        function _preencheForm() {
-            $('input[name=id]').val(itemAtual.id);
-            $('input[name=descricao]').val(itemAtual.descricao);
-        }
-
-        function _parseForm() {
-            itemAtual.id = $('input[name=id]').val();
-            itemAtual.descricao = $('input[name=descricao]').val();
+        function _preencheForm(registro) {
+            if (registro.id != null) {
+                var id = $('#idModalLabelCadastro').html();
+                id = id.replace(/\(id\)/g, registro.id);
+                $('#idModalLabelCadastro').html(id);            
+            }    
+            $('input[name=id]').val(registro.id);
+            $('input[name=descricao]').val(registro.descricao);
         }
 
         function _salvar() {
             if (_validarCampos()) {
-                _parseForm();
-                _renderTable();
+                $.post('api/equipamentos', $('form[role=cadastro]').serialize(), function () {
+                    _carregar();
+                    showMessage('success', 'Equipamento salvo com sucesso!');
+                }).error(function (data) {
+                    showMessage('danger', data.status + ' - Erro ao salvar equipamento! &nbsp' + data.responseText);
+                });
                 $("#cadastroEquipamento-modal").modal("hide");
-                showMessage('success', 'Equipamento salvo com sucesso!')
             }
         }
 
-        function _renderTable() {
+        function _renderTable(repositorio) {
             var final = '';
             modeloLinhaTabela = modeloLinhaTabela || $('table.table tbody').html();
             if (repositorio.length == 0) {
                 $('table.table tbody').html('<tr><td>Nenhum equipamento cadastrado.</td></tr>');
             }
             else {
-                for (var i = pagina * tamanhoPagina; i < repositorio.length && i < (pagina + 1) *  tamanhoPagina; i++) {
+                for (var i = 0; i < repositorio.length; i++) {
                     var res = modeloLinhaTabela;
                     var linha = repositorio[i];
                     res = res.replace(/\(\(id\)\)/g, linha.id);
@@ -78,109 +88,70 @@
                 }
                 $('table.table tbody').html(final);
             }
-            if (repositorio.length > 0) {
-			    $('#numeracao').text((pagina + 1) + ' de ' + Math.ceil(repositorio.length / tamanhoPagina));
-            }
-            else {
-                $('#numeracao').text('0 de 0');
-            }   
-			$('#primeiro').prop('disabled', repositorio.length <= tamanhoPagina || pagina == 0);
-			$('#anterior').prop('disabled', repositorio.length <= tamanhoPagina || pagina == 0);
-			$('#proximo').prop('disabled', repositorio.length <= tamanhoPagina || pagina >= Math.ceil(repositorio.length / tamanhoPagina) - 1);
-			$('#ultimo').prop('disabled', repositorio.length <= tamanhoPagina || pagina == Math.ceil(repositorio.length / tamanhoPagina) - 1);
+            $('#anterior').prop('disabled', pagina == 0);
         }
 		
-		function _setRemove(id) {
-			idRemover = id;
-		}
+	    function _setRemove(id) {
+            idRemover = id;
+	    }
 
         function _remove() {
-			var ultimaPagina;
-            for (var i = 0; i < repositorio.length; i++) {
-                var item = repositorio[i];
-                if (item.id == idRemover) {
-					if (pagina == Math.ceil(repositorio.length / tamanhoPagina) - 1) {
-						ultimaPagina = 1;
-					}					
-                    repositorio.splice(i, 1);
-                    if (repositorio.length == 0) {
-                        pagina = 0;
-                    }
-					if (ultimaPagina == 1 && repositorio.length > 0 && pagina != Math.ceil(repositorio.length / tamanhoPagina) - 1) {
-						pagina = Math.ceil(repositorio.length / tamanhoPagina) - 1;
-					}
-                    break;
-                }
-            }
-            _renderTable();
-			idRemover = 0;
+            $.ajax({
+                url: "api/equipamentos?id=" + idRemover,
+                type: "DELETE"
+            }).done(function () {
+                _carregar();
+            }).error(function (data) {
+                showMessage('danger', data.status + ' - Erro ao excluir equipamento!');
+            });
+            idRemover = 0;
         }
 
         function _editar(id) {
-            for (var i = 0; i < repositorio.length; i++) {
-                var item = repositorio[i];
-                if (item.id == id) {
-                    itemAtual = item;
-                    break;
-                }
-            }
-            _preencheForm();
-            inserindo = false;
+            $('#idModalLabelCadastro').removeClass();
+            var titulo = 'Editar Equipamento <samp id="idModalLabelCadastro">((id))</samp>';
+            $('#modalLabelCadastro').html(titulo);
+            $.getJSON('api/equipamentos', 'id=' + id, function (data) {
+                _preencheForm(data);
+            })
+
         }
-		
-		function _primeiro() {
-			if (pagina > 0) {
-				pagina = 0;
-				_renderTable();
-			}	
-		}
 		
 		function _anterior() {
 			if (pagina > 0) {
 				pagina--;
-				_renderTable();
+				_carregar();
 			}
 		}
 		
 		function _proximo() {
-			if (pagina < repositorio.length / tamanhoPagina - 1) {
-				pagina++;
-				_renderTable();
-			}
+            pagina++;
+            _carregar();
 		}
 		
-		function _ultimo() {
-			if (pagina < repositorio.length / tamanhoPagina - 1) {
-				pagina = Math.ceil(repositorio.length / tamanhoPagina) - 1;
-				_renderTable();
-			}			
-		}
-
         function _validarCampos() {
+            var retorno = true;
             $('#formEquipamento input[name=descricao]').closest('.form-group').removeClass('has-error');
             if (!$('#formEquipamento input[name=descricao]').val()) {
                 $('#formEquipamento input[name=descricao]').closest('.form-group').addClass('has-error');
-                return false;
+                retorno =  false;
             }
-            return true;
+            return retorno;
         }        
 
         return {
             inserir: _inserir,
-            cancelar: _cancelar,
             editar: _editar,
             salvar: _salvar,
-			setRemove: _setRemove,
+            setRemove: _setRemove,
             remove: _remove,
-			primeiro: _primeiro,
-			anterior: _anterior,
-			proximo: _proximo,
-			ultimo: _ultimo
-			
+            anterior: _anterior,
+            proximo: _proximo,
+            pesquisar: _pesquisar
         }
     }
 
-    $(function(){
+    $(function(){        
         window.ctrl = equipamentoControler();
         $('#btnSalvar').click(function(){
             ctrl.salvar();
@@ -188,17 +159,8 @@
         $('#btnNovo').click(function(){
             ctrl.inserir();
         });
-
-        $('#btnCancelar').click(function(){
-            ctrl.cancelar();
-        })
-        $("#btnFecharFormEquipamento").click(function(){
-            ctrl.cancelar();
-        });
-        $('#cadastroEquipamento-modal').keydown(function(e) {
-            if (e.keyCode == 27) {
-                ctrl.cancelar();
-            }
-        });                
+        $('#btnPesquisar').click(function(){
+            ctrl.pesquisar();
+        }); 
     });
 })();

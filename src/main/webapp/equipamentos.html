@@ -28,7 +28,6 @@
 	</div>
 	</div> 
 
-	
 	<div id="main" class="container">
 		<div id="menu">
 		</div>
@@ -39,14 +38,16 @@
 			</div>
 		
 			<div class="col-md-6">
-				<div class="input-group h2">
-					<input name="data[search]" class="form-control" id="search" type="text" placeholder="Pesquisar Equipamentos">
-					<span class="input-group-btn">
-						<button class="btn btn-primary" type="button">
-							<span class="glyphicon glyphicon-search"></span>
-						</button>
-					</span>
-				</div>
+				<form id="formPesquisar" role="pesquisar">
+					<div class="input-group h2 form-group">
+						<input name="dadoPesquisa" class="form-control" id="pesquisa" type="text" placeholder="Pesquisar Equipamentos">
+						<span class="input-group-btn">
+							<button id="btnPesquisar" class="btn btn-primary" type="button">
+								<span class="glyphicon glyphicon-search"></span>
+							</button>
+						</span>
+					</div>								
+				</form>
 			</div>
 		
 			<div class="col-md-3">
@@ -61,20 +62,20 @@
 				<div class="modal-content">
 					<div class="modal-header">
 						<button id="btnFecharFormEquipamento" type="button" class="close" data-dismiss="modal" aria-label="Fechar"><span aria-hidden="true">&times;</span></button>
-						<h4 class="modal-title" id="modalLabel">Cadastro de Equipamentos</h4>
+						<h4 id="modalLabelCadastro" class="modal-title">Cadastro de Equipamentos <samp id="idModalLabelCadastro">((id))</samp></h4>
 					</div>
+
 					<div class="modal-body">					
-						<form id="formEquipamento" data-toggle="validator" role="form">
+						<form id="formEquipamento" role="cadastro">
 							<div class="row">
 								<div class="form-group col-md-12">
-									<label for="id">ID</label>
-									<input name="id" type="text" readonly class="form-control">
+									<input name="id" type="hidden" readonly class="form-control">
 								</div>
 							</div>
 							<div class="row">
 								<div class="form-group col-md-12">
 									<label for="descricao">Descricao</label>
-									<input name="descricao" type="text" class="form-control" placeholder="Digite a descricao" required>
+									<input name="descricao" type="text" class="form-control" placeholder="Digite a descricao" required maxlength="150">
 								</div>
 							</div>
 						</form>					
@@ -120,7 +121,6 @@
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 	<script>window.jQuery || document.write('<script src="assets/js/vendor/jquery.min.js"><\/script>')</script>
 	<script src="dist/js/bootstrap.min.js"></script>
-	<script src="js/validator.min.js"></script>
 	<script src="js/app.js"></script>
 	<script src="js/equipamento.js"></script>
 </body>

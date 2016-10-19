@@ -11,20 +11,20 @@ COMMENT ON DATABASE cursobetha
 
 CREATE TABLE public.clientes
 (
-   id integer not null, 
+   id_cliente integer not null, 
    nome character varying(200) not null, 
    telefone character varying(20) not null, 
    documento character varying(20) not null, 
    email character varying(120),
-   CONSTRAINT pk_clientes PRIMARY KEY (id)
+   CONSTRAINT pk_clientes PRIMARY KEY (id_cliente)
 );
 
 CREATE TABLE public.tecnicos
 (
-   id integer not null, 
+   id_tecnicos integer not null, 
    nome character varying(150) not null,
    tipo character varying(1) not null,
-   CONSTRAINT pk_tecnicos PRIMARY KEY (id)
+   CONSTRAINT pk_tecnicos PRIMARY KEY id_tecnicos)
 );
 
 ALTER TABLE public.tecnicos
@@ -33,15 +33,15 @@ COMMENT ON COLUMN public.tecnicos.tipo IS 'T - T�cnico G-Gerente';
 
 CREATE TABLE public.equipamentos
 (
-   id integer not null, 
+   id_equipamentos integer not null, 
    descricao character varying(150) not null,
-   CONSTRAINT pk_equipamentos PRIMARY KEY (id)
+   CONSTRAINT pk_equipamentos PRIMARY KEY (id_equipamentos)
 );
 
 
 CREATE TABLE public.chamados_tecnicos
 (
-   id integer not null, 
+   id_chamados_tecnicos integer not null, 
    emissao timestamp without time zone not null, 
    aprovacao timestamp without time zone, 
    id_cliente integer not null, 
@@ -52,11 +52,11 @@ CREATE TABLE public.chamados_tecnicos
    status character varying(2) not null,
    tipo character varying(1) not null,
    valor NUMERIC(14,2) not null default 0,
-   CONSTRAINT pk_chamados_tecnicos PRIMARY KEY (id), 
-   CONSTRAINT fk_cliente FOREIGN KEY (id_cliente) REFERENCES public.clientes (id) ON UPDATE NO ACTION ON DELETE NO ACTION,
-   CONSTRAINT fk_tecnico FOREIGN KEY (id_tecnico) REFERENCES public.tecnicos (id) ON UPDATE NO ACTION ON DELETE NO ACTION,
-   CONSTRAINT fk_gerente FOREIGN KEY (id_gerente) REFERENCES public.tecnicos (id) ON UPDATE NO ACTION ON DELETE NO ACTION,
-   CONSTRAINT fk_equipamento FOREIGN KEY (id_equipamento) REFERENCES public.equipamentos (id) ON UPDATE NO ACTION ON DELETE NO ACTION
+   CONSTRAINT pk_chamados_tecnicos PRIMARY KEY (id_chamados_tecnicos), 
+   CONSTRAINT fk_cliente FOREIGN KEY (id_cliente) REFERENCES public.clientes (id_cliente) ON UPDATE NO ACTION ON DELETE NO ACTION,
+   CONSTRAINT fk_tecnico FOREIGN KEY (id_tecnico) REFERENCES public.tecnicos (id_tecnico) ON UPDATE NO ACTION ON DELETE NO ACTION,
+   CONSTRAINT fk_gerente FOREIGN KEY (id_gerente) REFERENCES public.tecnicos (id_tecnico) ON UPDATE NO ACTION ON DELETE NO ACTION,
+   CONSTRAINT fk_equipamento FOREIGN KEY (id_equipamento) REFERENCES public.equipamentos (id_equipamento) ON UPDATE NO ACTION ON DELETE NO ACTION
 
 );
 
