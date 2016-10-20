@@ -52,6 +52,7 @@ CREATE TABLE public.chamados_tecnicos
    status character varying(2) not null,
    tipo character varying(1) not null,
    valor_total NUMERIC(14,5) not null default 0,
+   descricao_solucao character varying(1000),
    CONSTRAINT pk_chamados_tecnicos PRIMARY KEY (id_chamado_tecnico), 
    CONSTRAINT fk_cliente FOREIGN KEY (id_cliente) REFERENCES public.clientes (id_cliente) ON UPDATE NO ACTION ON DELETE NO ACTION,
    CONSTRAINT fk_tecnico FOREIGN KEY (id_tecnico) REFERENCES public.tecnicos (id_tecnico) ON UPDATE NO ACTION ON DELETE NO ACTION,

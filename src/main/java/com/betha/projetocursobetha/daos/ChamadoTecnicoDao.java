@@ -21,7 +21,7 @@ import java.util.List;
 public class ChamadoTecnicoDao extends GenericDao {
 
     public ChamadoTecnico insert(ChamadoTecnico chamado) throws Exception {
-        String insert = "insert into chamados_tecnicos (id_chamado_tecnico, descricao_problema, emissao, aprovacao, status, tipo, valor_total, id_cliente, id_tecnico, id_gerente, id_equipamento) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String insert = "insert into chamados_tecnicos (id_chamado_tecnico, descricao_problema, descricao_solucao, emissao, aprovacao, status, tipo, valor_total, id_cliente, id_tecnico, id_gerente, id_equipamento) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         String sqlSequencia = "select nextval('seq_chamados_tecnicos')";
 
         List<Object> parametros = new ArrayList<>();
@@ -32,7 +32,7 @@ public class ChamadoTecnicoDao extends GenericDao {
     }
 
     public ChamadoTecnico update(ChamadoTecnico chamado) throws Exception {
-        String update = "update chamados_tecnicos set descricao_problema = ?, emissao = ?, aprovacao = ?, status = ?, tipo = ?, valor_total = ?, id_cliente = ?, id_tecnico = ?, id_gerente = ?, id_equipamento = ? where id_chamado_tecnico = ?";
+        String update = "update chamados_tecnicos set descricao_problema = ?, descricao_solucao = ?, emissao = ?, aprovacao = ?, status = ?, tipo = ?, valor_total = ?, id_cliente = ?, id_tecnico = ?, id_gerente = ?, id_equipamento = ? where id_chamado_tecnico = ?";
 
         List<Object> parametros = new ArrayList<>();
         parametros = setParametros(chamado, Utils.UPDATE);
@@ -109,9 +109,9 @@ public class ChamadoTecnicoDao extends GenericDao {
             Tecnico tecnico = new Tecnico(resultSet.getLong("id_tecnico"));
             Gerente gerente = new Gerente(resultSet.getLong("id_gerente"));
             Equipamento equipamento = new Equipamento(resultSet.getLong("id_equipamento"));
-
             chamado.setId(resultSet.getLong("id_chamado_tecnico"));
             chamado.setDescricaoProblema(resultSet.getString("descricao_problema"));
+            chamado.setDescricaoSolucao(resultSet.getString("descricao_solucao"));
             chamado.setEmissao(resultSet.getTimestamp("emissao") == null ? LocalDateTime.MIN : resultSet.getTimestamp("emissao").toLocalDateTime());
             chamado.setAprovacao(resultSet.getTimestamp("aprovacao") == null ? LocalDateTime.MIN : resultSet.getTimestamp("aprovacao").toLocalDateTime());
             chamado.setValorTotal(resultSet.getBigDecimal("valor_total"));
@@ -157,6 +157,7 @@ public class ChamadoTecnicoDao extends GenericDao {
     private List<Object> setParametros(ChamadoTecnico chamado, String operacao) {
         List<Object> parametros = new ArrayList<>();
         parametros.add(chamado.getDescricaoProblema());
+        parametros.add(chamado.getDescricaoSolucao());
         parametros.add(chamado.getEmissao());
         parametros.add(chamado.getAprovacao());
         parametros.add(chamado.getStatus().getValor());

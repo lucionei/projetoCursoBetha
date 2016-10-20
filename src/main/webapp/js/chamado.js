@@ -1,8 +1,9 @@
 (function () {	
 	
-    function Chamado(id, cliente, equipamento, descricaoProblema, emissao, aprovacao, tecnico, gerente, tipo, status) {
+    function Chamado(id, cliente, equipamento, descricaoProblema, descricaoSolucao, emissao, aprovacao, tecnico, gerente, tipo, status) {
         this.id = id;
         this.descricaoProblema = descricaoProblema;
+        this.descricaoSolucao = descricaoSolucao;
         this.emissao = emissao;
         this.aprovacao = aprovacao;
         this.tipo = tipo;
@@ -143,6 +144,7 @@
             }    
             $('input[name=id]').val(registro.id);
             $('textarea[name=descricaoProblema]').val(registro.descricaoProblema);
+            $('textarea[name=descricaoSolucao]').val(registro.descricaoSolucao);
             $('select[name=cliente]').val(registro.cliente);
             $('select[name=tecnico]').val(registro.tecnico);
             $('select[name=gerente]').val(registro.gerente);

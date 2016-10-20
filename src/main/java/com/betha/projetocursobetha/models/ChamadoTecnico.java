@@ -14,11 +14,12 @@ public class ChamadoTecnico implements Parseable {
 
     private Long id;
     private String descricaoProblema;
+    private String descricaoSolucao;
     private LocalDateTime emissao;
     private LocalDateTime aprovacao;
     private StatusChamado status;
     private TipoChamado tipo;
-    private BigDecimal valorTotal;
+    private BigDecimal valorTotal; //implementação futura
     private Cliente cliente;
     private Tecnico tecnico;
     private Gerente gerente;
@@ -38,6 +39,14 @@ public class ChamadoTecnico implements Parseable {
 
     public void setDescricaoProblema(String descricaoProblema) {
         this.descricaoProblema = descricaoProblema;
+    }
+
+    public String getDescricaoSolucao() {
+        return descricaoSolucao;
+    }
+
+    public void setDescricaoSolucao(String descricaoSolucao) {
+        this.descricaoSolucao = descricaoSolucao;
     }
 
     public LocalDateTime getEmissao() {
@@ -118,6 +127,10 @@ public class ChamadoTecnico implements Parseable {
             sb.append("Campo descrição do problema deve possuir no máximo 1000 caracteres\n");
         }
 
+        if (descricaoSolucao.length() > 1000) {
+            sb.append("Campo descrição da solução deve possuir no máximo 1000 caracteres\n");
+        }
+
         if (Utils.isEmpty(descricaoProblema)) {
             sb.append("Campo descrição do problema é obrigatório\n");
         }
@@ -153,19 +166,27 @@ public class ChamadoTecnico implements Parseable {
         if (Utils.isNull(equipamento.getId())) {
             sb.append("Campo equipamento é obrigatório");
         }
+
+        if ((status.equals(StatusChamado.FINALIZADO)) || (aprovacao.isAfter(LocalDateTime.MIN))) {
+            if (Utils.isEmpty(descricaoSolucao)) {
+                sb.append("Campo descrição da solução deve ser informado");
+            }
+        }
+
         return sb.toString();
     }
 
     @Override
     public String toString() {
-        return String.format("{\"id\":\"%s\",\"descricaoProblema\":\"%s\",\"emissao\":\"%s\",\"aprovacao\":\"%s\",\"status\":\"%s\",\"tipo\":\"%s\",\"valorTotal\":\"%s\",\"cliente\":\"%s\",\"tecnico\":\"%s\",\"gerente\":\"%s\",\"equipamento\":\"%s\"}",
-                id, descricaoProblema, Utils.nullString(emissao), Utils.nullString(aprovacao == LocalDateTime.MIN ? null : aprovacao), status.getValor(), tipo.getValor(), valorTotal, cliente.getId(), tecnico.getId(), gerente.getId(), equipamento.getId());
+        return String.format("{\"id\":\"%s\",\"descricaoProblema\":\"%s\",\"descricaoSolucao\":\"%s\",\"emissao\":\"%s\",\"aprovacao\":\"%s\",\"status\":\"%s\",\"tipo\":\"%s\",\"valorTotal\":\"%s\",\"cliente\":\"%s\",\"tecnico\":\"%s\",\"gerente\":\"%s\",\"equipamento\":\"%s\"}",
+                id, descricaoProblema, descricaoSolucao, Utils.nullString(emissao), Utils.nullString(aprovacao == LocalDateTime.MIN ? null : aprovacao), status.getValor(), tipo.getValor(), valorTotal, cliente.getId(), tecnico.getId(), gerente.getId(), equipamento.getId());
     }
 
     @Override
     public void parse(Map<String, String> dados) {
         id = dados.get("id") == null || dados.get("id").isEmpty() ? null : Long.parseLong(dados.get("id"));
         descricaoProblema = dados.get("descricaoProblema");
+        descricaoSolucao = dados.get("descricaoSolucao");
         emissao = Utils.parseDate(dados.get("emissao"), "dd/MM/yyyy HH:mm:ss");
         aprovacao = Utils.parseDate(dados.get("aprovacao"), "dd/MM/yyyy HH:mm:ss");
         valorTotal = Utils.parseDecimal(dados.get("valorTotal"));
@@ -210,6 +231,7 @@ public class ChamadoTecnico implements Parseable {
         int hash = 5;
         hash = 89 * hash + Objects.hashCode(this.id);
         hash = 89 * hash + Objects.hashCode(this.descricaoProblema);
+        hash = 89 * hash + Objects.hashCode(this.descricaoSolucao);
         hash = 89 * hash + Objects.hashCode(this.emissao);
         hash = 89 * hash + Objects.hashCode(this.aprovacao);
         hash = 89 * hash + Objects.hashCode(this.status);
@@ -235,6 +257,9 @@ public class ChamadoTecnico implements Parseable {
         }
         final ChamadoTecnico other = (ChamadoTecnico) obj;
         if (!Objects.equals(this.descricaoProblema, other.descricaoProblema)) {
+            return false;
+        }
+        if (!Objects.equals(this.descricaoSolucao, other.descricaoSolucao)) {
             return false;
         }
         if (!Objects.equals(this.id, other.id)) {
